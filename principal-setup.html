@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Private Principal Account Setup | Barpeta Law College</title>
+  <link rel="icon" href="assets/barpeta-law-college-logo.jpg">
+  <style>
+    :root{font-family:Arial,sans-serif;color:#eee8dc;background:#071923}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px}
+    main{width:min(100%,470px);background:#102733;border:1px solid #38515b;border-radius:18px;padding:32px;box-shadow:0 18px 60px #0005}
+    small{color:#d3ae69;letter-spacing:.15em;font-size:11px;font-weight:700}h1{font-family:Georgia,serif;font-weight:400;font-size:32px;margin:14px 0}
+    p{line-height:1.55;color:#c8d1d1}form{display:grid;gap:15px;margin-top:24px}label{display:grid;gap:7px;font-size:12px;font-weight:700;letter-spacing:.05em}
+    input{width:100%;font:inherit;padding:13px 14px;border-radius:8px;border:1px solid #526873;background:#071923;color:white}
+    input:focus{outline:2px solid #d3ae69;outline-offset:1px}
+    button{font:inherit;cursor:pointer;padding:14px;border:0;border-radius:8px;background:#d3ae69;color:#102733;font-weight:700}
+    button:disabled{opacity:.6;cursor:wait}a{color:#e6c685}#setupStatus{margin-top:18px;padding:12px;border-radius:8px;background:#173b46}
+    #setupStatus.error{background:#4a282a;color:#ffe4df}[hidden]{display:none!important}
+  </style>
+</head>
+<body>
+  <main>
+    <small>BARPETA LAW COLLEGE · PRIVATE SETUP</small>
+    <h1>Principal’s account</h1>
+    <p id="setupIntro">Use the private setup code provided by the college. Enter your own email and password. Your username will be <strong>BLC@Principal</strong>.</p>
+    <form id="principalRegister">
+      <label>Private setup code<input name="code" type="text" minlength="64" maxlength="64" autocomplete="off" spellcheck="false" required></label>
+      <label>First name<input name="first_name" autocomplete="given-name" maxlength="80" required></label>
+      <label>Last name<input name="last_name" autocomplete="family-name" maxlength="80" required></label>
+      <label>Your email<input name="email" type="email" autocomplete="email" required></label>
+      <label>Create password<input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+      <label>Confirm password<input name="confirm_password" type="password" autocomplete="new-password" minlength="8" required></label>
+      <button type="submit">Create account &amp; send email confirmation</button>
+    </form>
+    <form id="principalClaim" hidden>
+      <p>Your email must be confirmed before you complete setup. If you just clicked the confirmation link, enter the private code and your name again.</p>
+      <label>Private setup code<input name="code" type="text" minlength="64" maxlength="64" autocomplete="off" spellcheck="false" required></label>
+      <label>First name<input name="first_name" autocomplete="given-name" maxlength="80" required></label>
+      <label>Last name<input name="last_name" autocomplete="family-name" maxlength="80" required></label>
+      <button type="submit">Complete one-time setup</button>
+    </form>
+    <p id="setupStatus" role="status" aria-live="polite" hidden></p>
+    <p><a href="institute-head.html">← Principal login</a></p>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <script src="principal-setup.js?v=20261005a"></script>
+</body>
+</html>

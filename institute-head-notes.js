@@ -7,8 +7,11 @@ const toDb={Academic:"academic",Administrative:"administrative",Finance:"financi
 const $=s=>document.querySelector(s);
 const sb=()=>window.supabaseClient||(window.supabase&&typeof SUPABASE_URL!=="undefined"?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY):null);
 const esc=s=>String(s??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
-const read=k=>{try{const v=JSON.parse(localStorage.getItem(k)||"[]");return Array.isArray(v)?v:[]}catch{return[]}};
-const write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+// Drafts belong to the authenticated Principal, never to the browser as a whole.
+// The old unscoped keys contain launch test drafts and are no longer read.
+const accountKey=k=>me?.id?k+":"+me.id:null;
+const read=k=>{try{const key=accountKey(k);if(!key)return[];const v=JSON.parse(localStorage.getItem(key)||"[]");return Array.isArray(v)?v:[]}catch{return[]}};
+const write=(k,v)=>{const key=accountKey(k);if(!key)throw new Error("Principal session unavailable.");localStorage.setItem(key,JSON.stringify(v))};
 
 const nav=$(".ih-notes-actions"),label=$("#ihNotesSectionLabel"),reg=$("#ihAllNotesRegister"),list=$("#ihRegisterList"),empty=$("#ihRegisterEmpty"),count=$("#ihRegisterCount"),dock=$("#ihCreateActionDock"),sw=$("#ihNoteTypeSwitch");
 const yWs=$("#ihYellowNoteWorkspace"),yCat=$("#ihYellowCategory"),ySub=$("#ihYellowSubject"),yEd=$("#ihYellowEditor"),yState=$("#ihYellowDraftState"),yFiles=$("#ihYellowFiles"),yFileList=$("#ihYellowFileList"),ySave=$("#ihYellowSave"),yConvert=$("#ihYellowConvert"),yCancel=$("#ihYellowCancel");
@@ -92,12 +95,14 @@ async function ensureDbGreen(note){
 
 async function saveYellow(){
  const v=validate(yCat,ySub,yEd,yState);if(!v||yellowReadonly)return;
+ if(!await authUser()){if(yState)yState.textContent="Principal session unavailable. Sign in again.";return}
  const rows=read(YKEY),now=new Date().toISOString();let d=yellowEditingId?rows.find(x=>x.id===yellowEditingId):null;
  if(d){d.category=v.category;d.subject=v.subject;d.body=v.body;d.updatedAt=now}else{d={id:"YD-"+Date.now(),type:"yellow",status:"draft",...v,createdAt:now,updatedAt:now,convertedToGreenId:null};rows.push(d)}
  write(YKEY,rows);localStorage.removeItem("blc_ih_yellow_draft");freshYellow();renderAll();setSection("all");statusToast("Yellow Note saved successfully")
 }
 async function saveGreen(){
  const v=validate(gCat,gSub,gEd,gState);if(!v)return;
+ if(!await authUser()){if(gState)gState.textContent="Principal session unavailable. Sign in again.";return}
  if(greenViewingId){const d=read(GKEY).find(x=>x.id===greenViewingId);if(!d||d.signedAt){if(gState)gState.textContent='Signed Green Notes are read-only.';return}if(gSave){gSave.disabled=true;gSave.textContent='Saving…'}try{const id=await ensureDbGreen(d),c=sb();const {data,error}=await c.from('staff_notes').update({subject:v.subject,note_content:v.body,updated_at:new Date().toISOString()}).eq('id',id).eq('note_type','green').is('note_esign_at',null).eq('status','draft').select('id').maybeSingle();if(error||!data)throw new Error(error?.message||'This note has already been signed.');updateLocalGreen(d.id,{subject:v.subject,body:v.body});renderAll();if(gState)gState.innerHTML='<b></b>Changes saved · editable until signed in Send Note';statusToast('Green Note changes saved')}catch(e){if(gState)gState.textContent=e.message}finally{if(gSave){gSave.disabled=false;gSave.textContent='Save Changes'}}return}
 
  if(gSave){gSave.disabled=true;gSave.textContent="Saving…"}if(gState)gState.innerHTML="<b></b>Saving Green Note securely…";
@@ -107,6 +112,7 @@ async function saveGreen(){
 }
 async function convertYellow(){
  const v=validate(yCat,ySub,yEd,yState);if(!v||yellowReadonly)return;
+ if(!await authUser()){if(yState)yState.textContent="Principal session unavailable. Sign in again.";return}
  if(yConvert){yConvert.disabled=true;yConvert.textContent="Converting…"}const ys=read(YKEY),now=new Date().toISOString();let y=yellowEditingId?ys.find(x=>x.id===yellowEditingId):null;
  if(!y){y={id:"YD-"+Date.now(),type:"yellow",status:"draft",...v,createdAt:now,updatedAt:now,convertedToGreenId:null};ys.push(y)}else{y.category=v.category;y.subject=v.subject;y.body=v.body;y.updatedAt=now}
  const sourceDbId=y.dbId||await createDbYellow(v);if(sourceDbId)y.dbId=sourceDbId;
@@ -243,4 +249,9 @@ $("#ihSendForm")?.addEventListener("submit",submitSend);
 $("#ihAllNotesSearch")?.addEventListener("input",renderAll);$("#ihInboxSearch")?.addEventListener("input",()=>renderCorrespondence("inbox"));$("#ihInboxFilter")?.addEventListener("change",()=>renderCorrespondence("inbox"));$("#ihSentSearch")?.addEventListener("input",()=>renderCorrespondence("sent"));
 
 freshYellow();freshGreen();renderAll();setSection("all");
+authUser().then(user=>{if(user){
+ localStorage.removeItem(YKEY);localStorage.removeItem(GKEY);
+ localStorage.removeItem("blc_ih_yellow_draft");localStorage.removeItem("blc_ih_green_draft");
+ renderAll();freshGreen()
+}});
 })();
