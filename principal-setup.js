@@ -59,7 +59,8 @@
         p_last_name:data.last_name
       });
       if(error)throw error;
-      await sb.auth.signOut();
+      const signedOut=await sb.auth.signOut({scope:'local'});
+      if(signedOut.error)throw new Error('Account created, but this browser session could not be cleared. Close the browser before signing in again.');
       if(location.hash||location.search)history.replaceState({},document.title,location.pathname);
       claim.hidden=true;
       message('Setup complete. Your username is BLC@Principal. Sign in with your password and the email verification code to open your dashboard.');
